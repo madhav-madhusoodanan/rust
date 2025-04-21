@@ -297,6 +297,28 @@ pub(crate) fn to_llvm_features<'a>(sess: &Session, s: &'a str) -> Option<LLVMFea
             None
         }
         ("x86", "movrs") if get_version().0 < 20 => None,
+        ("x86", "egpr" | "push2pop2" | "ppx" | "ndd" | "ccmp" | "cf") if get_version().0 < 18 => {
+            None
+        }
+        ("x86", "nf" | "zu" | "inline-asm-use-gpr32") if get_version() < (19, 1, 0) => None,
+        ("x86", "apxf") => {
+            if get_version() < (19, 1, 0) {
+                None
+            } else {
+                Some(LLVMFeature::with_dependencies(
+                    "egpr",
+                    smallvec![
+                        TargetFeatureFoldStrength::Both("push2pop2"),
+                        TargetFeatureFoldStrength::Both("ppx"),
+                        TargetFeatureFoldStrength::Both("ndd"),
+                        TargetFeatureFoldStrength::Both("ccmp"),
+                        TargetFeatureFoldStrength::Both("cf"),
+                        TargetFeatureFoldStrength::Both("nf"),
+                        TargetFeatureFoldStrength::Both("zu"),
+                    ],
+                ))
+            }
+        }
         (_, s) => Some(LLVMFeature::new(s)),
     }
 }
